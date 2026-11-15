@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kahoot! - Vật Liệu Polymer</title>
+    <style>
+        :root {
+            --kahoot-red: #e21b3c;
+            --kahoot-blue: #1368ce;
+            --kahoot-yellow: #d89e00;
+            --kahoot-green: #26890c;
+            --kahoot-purple: #8425c3;
+            --bg-color: #f2f2f2;
+            --text-main: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            margin: 20px;
+        }
+
+        /* Lobby Screen */
+        #lobby-screen h1 {
+            color: var(--kahoot-purple);
+            margin-bottom: 20px;
+            font-size: 2.2rem;
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        input[type="text"] {
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            border: 3px solid #ccc;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 400px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--kahoot-blue);
+        }
+
+        .btn {
+            background-color: var(--kahoot-green);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+
+        /* Quiz Screen */
+        #quiz-screen {
+            display: none;
+        }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #555;
+        }
+
+        .timer-box {
+            background: #333;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+        }
+
+        .question-box {
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 25px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 25px;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .answer-btn {
+            padding: 20px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+            text-align: center;
+        }
+
+        .answer-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+
+        .ans-0 { background-color: var(--kahoot-red); }
+        .ans-1 { background-color: var(--kahoot-blue); }
+        .ans-2 { background-color: var(--kahoot-yellow); }
+        .ans-3 { background-color: var(--kahoot-green); }
+
+        /* Feedback Screen */
+        #feedback-screen {
+            display: none;
+            padding: 40px 0;
+        }
+
+        #feedback-screen h2 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .correct-fb { color: var(--kahoot-green); }
+        .wrong-fb { color: var(--kahoot-red); }
+
+        /* Podium / Leaderboard Screen */
+        #podium-screen {
+            display: none;
+        }
+
+        #podium-screen h1 {
+            color: var(--kahoot-purple);
+            margin-bottom: 20px;
+        }
+
+        .podium-list {
+            margin: 20px 0;
+            text-align: left;
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .podium-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 6px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Lobby -->
+    <div id="lobby-screen">
+        <h1>Kahoot! Vật Liệu Polymer</h1>
+        <p style="margin-bottom: 20px; color: #666;">Nhập tên của bạn để bắt đầu thử thách 15 câu hỏi</p>
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Nhập biệt danh của bạn..." autocomplete="off">
+        </div>
+        <button class="btn" onclick="startGame()">Vào chơi</button>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quiz-screen">
+        <div class="quiz-header">
+            <span id="question-counter">Câu hỏi 1/15</span>
+            <div class="timer-box" id="timer">20</div>
+            <span id="current-score">Điểm: 0</span>
+        </div>
+        <div class="question-box" id="question-text">Đang tải câu hỏi...</div>
+        <div class="answers-grid" id="answers-container">
+            <!-- Dynamic Answer Buttons -->
+        </div>
+    </div>
+
+    <!-- Feedback Screen -->
+    <div id="feedback-screen">
+        <h2 id="feedback-title">Chính xác!</h2>
+        <p id="feedback-score-gain" style="font-size: 1.2rem; margin-bottom: 25px;"></p>
+        <button class="btn" onclick="nextQuestion()">Tiếp tục</button>
+    </div>
+
+    <!-- Podium Screen -->
+    <div id="podium-screen">
+        <h1>Bục Vinh Quang 🏆</h1>
+        <p id="final-score-text" style="font-size: 1.3rem; margin-bottom: 20px; font-weight: bold;"></p>
+        <div class="podium-list" id="podium-list">
+            <!-- Leaderboard items -->
+        </div>
+        <button class="btn" onclick="restartGame()">Chơi lại</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { q: "Thành phần chính của chất dẻo là gì?", options: ["Chất hoá dẻo", "Polymer", "Chất độn", "Chất xúc tiến"], answer: 1 },
+        { q: "Loại chất dẻo nào trong suốt, dùng để sản xuất thuỷ tinh hữu cơ làm kính máy bay, bể cá?", options: ["Polyethylene (PE)", "Poly(vinyl chloride) (PVC)", "Poly(methyl methacrylate)", "Polystyrene (PS)"], answer: 2 },
+        { q: "Bê tông cốt thép thuộc loại vật liệu composite nào?", options: ["Composite nền hữu cơ", "Composite nền kim loại", "Composite nền vô cơ", "Composite sợi carbon"], answer: 2 },
+        { q: "Tơ nào sau đây thuộc loại tơ thiên nhiên?", options: ["Tơ tằm", "Tơ nilon-6,6", "Tơ visco", "Tơ nitron"], answer: 0 },
+        { q: "Tơ nilon-6,6 thuộc loại tơ poliamit, được điều chế bằng phản ứng trùng ngưng giữa hexametylendiamin và axit ađipic. Đúng hay Sai?", options: ["Đúng", "Sai", "", ""], answer: 0, isTF: true },
+        { q: "Keo dán epoxy thường được dùng để dán loại vật liệu nào?", options: ["Gỗ", "Cao su", "Kim loại", "Giấy"], answer: 2 },
+        { q: "Giải pháp nào tối ưu cho đồ dùng nhựa dùng một lần nhờ khả năng phân huỷ nhanh dưới tác động của vi khuẩn?", options: ["Đốt rác thải nhựa", "Chôn lấp dưới đất", "Dùng chất dẻo phân huỷ sinh học (như polylactic acid)", "Dùng nhựa PVC thay thế"], answer: 2 },
+        { q: "Trong cấu trúc vật liệu composite, thành phần nào giữ vai trò chịu lực chính?", options: ["Chất nền", "Chất cốt (vật liệu gia cường)", "Chất hoá dẻo", "Chất kết dính"], answer: 1 },
+        { q: "Loại cao su tổng hợp nào có khả năng kháng dầu mỡ, dung môi cực tốt, dùng làm ống dẫn xăng dầu?", options: ["Cao su Buna", "Cao su Buna-S", "Cao su Buna-N", "Cao su Butyl"], answer: 2 },
+        { q: "Loại cao su nào chống thấm khí tốt nhất, thường dùng làm săm (ruột) xe?", options: ["Cao su Butyl", "Cao su Chloroprene", "Cao su Silicone", "Cao su Isoprene"], answer: 0 },
+        { q: "Tơ visco và tơ xenlulozơ axetat thuộc nhóm tơ tổng hợp. Đúng hay Sai?", options: ["Đúng", "Sai", "", ""], answer: 1, isTF: true },
+        { q: "Khi sử dụng nhựa vá săm, thao tác nào sau đây là đúng?", options: ["Bôi nhựa và dán chặt ngay lập tức", "Làm sạch, bôi nhựa, đợi dung môi bay hơi rồi mới dán chặt", "Đun nóng chảy nhựa trước khi bôi", "Pha thêm nước vào nhựa trước khi dán"], answer: 1 },
+        { q: "Điều gì xảy ra nếu lưu hoá cao su với hàm lượng lưu huỳnh quá cao (khoảng 30% - 50%)?", options: ["Cao su có độ đàn hồi cực đại", "Cao su chuyển thành nhựa cứng, giòn, mất tính đàn hồi (ebonite)", "Cao su dễ tan hơn trong xăng và benzen", "Cao su bị chảy dính ở nhiệt độ thường"], answer: 1 },
+        { q: "Vì sao cao su thiên nhiên (cis-polyisoprene) có tính đàn hồi trong khi đồng phân dạng trans (nhựa Gutta-percha) lại cứng và giòn?", options: ["Do cấu hình cis gây cản trở không gian, ngăn các mạch xếp khít vào nhau", "Do dạng trans có mạch phân nhánh dày đặc", "Do cấu hình cis chứa nhiều cầu nối disulfide (-S-S-)", "Do dạng trans không có liên kết đôi C=C trong mạch"], answer: 0 },
+        { q: "Trong vật liệu composite, chất nền và chất cốt hoà tan hoàn toàn vào nhau tạo thành một dung dịch rắn đồng nhất. Đúng hay Sai?", options: ["Đúng", "Sai", "", ""], answer: 1, isTF: true }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let playerName = "";
+    let timeLeft = 20;
+    let timerInterval;
+
+    function startGame() {
+        const nameInput = document.getElementById("username").value.trim();
+        if (!nameInput) {
+            alert("Vui lòng nhập tên của bạn trước khi bắt đầu!");
+            return;
+        }
+        playerName = nameInput;
+        score = 0;
+        currentQuestionIndex = 0;
+        
+        document.getElementById("lobby-screen").style.display = "none";
+        document.getElementById("quiz-screen").style.display = "block";
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (currentQuestionIndex >= questions.length) {
+            showPodium();
+            return;
+        }
+
+        clearInterval(timerInterval);
+        timeLeft = 20;
+        document.getElementById("timer").innerText = timeLeft;
+
+        const qData = questions[currentQuestionIndex];
+        document.getElementById("question-counter").innerText = `Câu hỏi ${currentQuestionIndex + 1}/${questions.length}`;
+        document.getElementById("current-score").innerText = `Điểm: ${score}`;
+        document.getElementById("question-text").innerText = qData.q;
+
+        const container = document.getElementById("answers-container");
+        container.innerHTML = "";
+
+        const numOptions = qData.isTF ? 2 : 4;
+        container.style.gridTemplateColumns = qData.isTF ? "1fr 1fr" : "1fr 1fr";
+
+        for (let i = 0; i < numOptions; i++) {
+            const btn = document.createElement("button");
+            btn.className = `answer-btn ans-${i}`;
+            btn.innerText = qData.options[i];
+            btn.onclick = () => selectAnswer(i);
+            container.appendChild(btn);
+        }
+
+        startTimer();
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById("timer").innerText = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                handleTimeOut();
+            }
+        }, 1000);
+    }
+
+    function selectAnswer(selectedIndex) {
+        clearInterval(timerInterval);
+        const qData = questions[currentQuestionIndex];
+        const isCorrect = selectedIndex === qData.answer;
+
+        document.getElementById("quiz-screen").style.display = "none";
+        document.getElementById("feedback-screen").style.display = "block";
+
+        const titleElem = document.getElementById("feedback-title");
+        const gainElem = document.getElementById("feedback-score-gain");
+
+        if (isCorrect) {
+            const pointsEarned = 500 + (timeLeft * 25); // Thưởng điểm theo thời gian
+            score += pointsEarned;
+            titleElem.innerText = "Chính xác! 🎉";
+            titleElem.className = "correct-fb";
+            gainElem.innerText = `+${pointsEarned} điểm`;
+        } else {
+            titleElem.innerText = "Rất tiếc, sai rồi! ❌";
+            titleElem.className = "wrong-fb";
+            gainElem.innerText = `Đáp án đúng là: ${qData.options[qData.answer]}`;
+        }
+    }
+
+    function handleTimeOut() {
+        document.getElementById("quiz-screen").style.display = "none";
+        document.getElementById("feedback-screen").style.display = "block";
+
+        const titleElem = document.getElementById("feedback-title");
+        const gainElem = document.getElementById("feedback-score-gain");
+
+        titleElem.innerText = "Hết giờ! ⏰";
+        titleElem.className = "wrong-fb";
+        gainElem.innerText = `Đáp án đúng là: ${questions[currentQuestionIndex].options[questions[currentQuestionIndex].answer]}`;
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        document.getElementById("feedback-screen").style.display = "none";
+        document.getElementById("quiz-screen").style.display = "block";
+        loadQuestion();
+    }
+
+    function showPodium() {
+        document.getElementById("quiz-screen").style.display = "none";
+        document.getElementById("podium-screen").style.display = "block";
+
+        document.getElementById("final-score-text").innerText = `Xin chúc mừng ${playerName}! Tổng điểm của bạn: ${score} điểm`;
+
+        // Giả lập bảng xếp hạng có thêm các bạn học sinh khác cho vui mắt phong cách Kahoot
+        const leaderboard = [
+            { name: playerName, score: score, isUser: true },
+            { name: "Kim Vân", score: 6800, isUser: false },
+            { name: "Nhật Minh Phan", score: 6200, isUser: false },
+            { name: "Thảo Ngân", score: 5500, isUser: false },
+            { name: "Hoàng Nhi", score: 4900, isUser: false }
+        ];
+
+        // Sắp xếp lại theo điểm từ cao xuống thấp
+        leaderboard.sort((a, b) => b.score - a.score);
+
+        const listContainer = document.getElementById("podium-list");
+        listContainer.innerHTML = "";
+
+        leaderboard.forEach((player, index) => {
+            const item = document.createElement("div");
+            item.className = "podium-item";
+            if (player.isUser) {
+                item.style.border = "2px solid var(--kahoot-blue)";
+                item.style.backgroundColor = "#eef5ff";
+            }
+            item.innerHTML = `<span>#${index + 1} - ${player.name}</span> <span>${player.score} pts</span>`;
+            listContainer.appendChild(item);
+        });
+    }
+
+    function restartGame() {
+        document.getElementById("podium-screen").style.display = "none";
+        document.getElementById("lobby-screen").style.display = "block";
+        document.getElementById("username").value = "";
+    }
+</script>
+
+</body>
+</html>

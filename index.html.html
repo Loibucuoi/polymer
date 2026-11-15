@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VẬT LIỆU POLYMER - TRÒ CHƠI KAHOOT</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Montserrat & Inter for bold Kahoot-style typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            user-select: none;
+        }
+        h1, h2, h3, .font-display {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Kahoot Floating Background Shapes */
+        .bg-kahoot {
+            background: radial-gradient(circle at 20% 20%, #46178f 0%, #25076b 100%);
+        }
+        .floating-shape {
+            position: absolute;
+            opacity: 0.12;
+            pointer-events: none;
+            animation: floatAnim 12s infinite ease-in-out;
+        }
+        @keyframes floatAnim {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-25px) rotate(12deg); }
+        }
+
+        /* Kahoot 3D Tactile Buttons */
+        .btn-kahoot {
+            transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease;
+        }
+        .btn-kahoot:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35) !important;
+        }
+        .btn-kahoot:hover:not(:disabled) {
+            filter: brightness(1.06);
+        }
+
+        .btn-red {
+            background-color: #e21b3c;
+            box-shadow: 0 6px 0 #a3122a;
+        }
+        .btn-blue {
+            background-color: #1368ce;
+            box-shadow: 0 6px 0 #0d4993;
+        }
+        .btn-yellow {
+            background-color: #d89e00;
+            box-shadow: 0 6px 0 #9c7200;
+        }
+        .btn-green {
+            background-color: #26890c;
+            box-shadow: 0 6px 0 #1a5e08;
+        }
+        .btn-dark {
+            background-color: #333333;
+            box-shadow: 0 6px 0 #1a1a1a;
+        }
+
+        /* Pop-in animation for modals & feedback */
+        @keyframes popIn {
+            0% { transform: scale(0.85); opacity: 0; }
+            70% { transform: scale(1.03); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Pulse animation for low timer */
+        @keyframes pulseUrgent {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+        }
+        .timer-urgent {
+            animation: pulseUrgent 0.6s infinite;
+            background-color: #e21b3c !important;
+        }
+
+        /* Confetti piece */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            z-index: 50;
+            pointer-events: none;
+            animation: confettiFall 3s linear forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-kahoot text-white min-h-screen flex flex-col relative">
+
+    <!-- Decorative Floating Geometric Shapes -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <svg class="floating-shape w-32 h-32 top-10 left-8" style="animation-delay: 0s;" viewBox="0 0 100 100">
+            <polygon points="50,10 90,90 10,90" fill="white"/>
+        </svg>
+        <svg class="floating-shape w-40 h-40 bottom-16 right-10" style="animation-delay: 2s;" viewBox="0 0 100 100">
+            <rect x="15" y="15" width="70" height="70" fill="white" transform="rotate(45 50 50)"/>
+        </svg>
+        <svg class="floating-shape w-28 h-28 top-1/3 right-1/4" style="animation-delay: 4s;" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="white"/>
+        </svg>
+        <svg class="floating-shape w-36 h-36 bottom-1/4 left-12" style="animation-delay: 6s;" viewBox="0 0 100 100">
+            <rect x="15" y="15" width="70" height="70" rx="8" fill="white"/>
+        </svg>
+    </div>
+
+    <!-- Top Navigation / Status Bar -->
+    <header class="relative z-20 w-full px-4 py-3 flex items-center justify-between bg-black/25 backdrop-blur-md border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+            <div class="bg-white text-[#46178f] font-display font-black px-3 py-1 rounded-lg text-lg tracking-tight shadow">
+                K!
+            </div>
+            <span class="font-display font-bold text-sm sm:text-base tracking-wide hidden sm:inline">VẬT LIỆU POLYMER</span>
+        </div>
+
+        <!-- Live Game HUD (Hidden on Start Screen) -->
+        <div id="hud-stats" class="hidden flex items-center gap-3 sm:gap-5">
+            <div class="bg-white/15 px-3 py-1 rounded-full text-xs sm:text-sm font-bold flex items-center gap-1.5">
+                <span>Câu</span>
+                <span id="hud-progress" class="text-yellow-300 font-display">1/15</span>
+            </div>
+            <div id="hud-streak-badge" class="hidden bg-orange-500/90 px-3 py-1 rounded-full text-xs sm:text-sm font-bold flex items-center gap-1 shadow">
+                <span>🔥</span>
+                <span id="hud-streak">0</span>
+            </div>
+            <div class="bg-white text-[#25076b] px-3.5 py-1 rounded-full text-xs sm:text-sm font-display font-black shadow">
+                <span id="hud-score">0</span> đ
+            </div>
+        </div>
+
+        <!-- Sound Toggle & Quit -->
+        <div class="flex items-center gap-2">
+            <button id="btn-sound" onclick="toggleSound()" title="Bật/Tắt âm thanh" class="p-2.5 rounded-xl bg-white/15 hover:bg-white/25 transition active:scale-95">
+                <svg id="icon-sound-on" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/>
+                </svg>
+                <svg id="icon-sound-off" class="w-5 h-5 hidden text-red-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="relative z-10 flex-1 flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-5xl mx-auto">
+
+        <!-- ==================== 1. START SCREEN ==================== -->
+        <section id="screen-start" class="w-full max-w-lg text-center animate-pop">
+            <div class="inline-block bg-yellow-400 text-[#25076b] font-display font-black text-xs sm:text-sm px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 shadow-lg">
+                Hóa Học 12 • Chuyên Đề Polymer
+            </div>
+            <h1 class="font-display font-black text-3xl sm:text-5xl leading-tight mb-3 drop-shadow-md">
+                VẬT LIỆU POLYMER
+            </h1>
+            <p class="text-purple-200 text-sm sm:text-base mb-8 font-medium">
+                15 câu hỏi trắc nghiệm & Đúng/Sai • Trả lời càng nhanh điểm càng cao!
+            </p>
+
+            <!-- Nickname Card -->
+            <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-2xl text-gray-800">
+                <label for="player-name" class="block text-left font-display font-bold text-sm text-gray-600 uppercase tracking-wider mb-2">
+                    Tên người chơi / Nhóm
+                </label>
+                <input type="text" id="player-name" maxlength="20" placeholder="Nhập tên của bạn..." 
+                    class="w-full px-4 py-3.5 rounded-xl border-2 border-gray-300 focus:border-[#46178f] focus:outline-none text-center font-display font-bold text-lg text-gray-900 mb-4 transition"
+                    onkeydown="if(event.key === 'Enter') startGame()">
+
+                <!-- Difficulty Breakdown Pills -->
+                <div class="flex flex-wrap justify-center gap-2 mb-6 text-xs font-bold">
+                    <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">6 Câu Dễ (20s)</span>
+                    <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800">6 Câu Trung Bình (20s)</span>
+                    <span class="px-3 py-1 rounded-full bg-rose-100 text-rose-800">3 Câu Khó (30s)</span>
+                </div>
+
+                <button onclick="startGame()" class="w-full py-4 rounded-xl btn-kahoot btn-dark text-white font-display font-black text-xl tracking-wide uppercase cursor-pointer">
+                    Bắt đầu chơi!
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== 2. QUESTION SCREEN ==================== -->
+        <section id="screen-question" class="hidden w-full flex-1 flex flex-col justify-between max-w-5xl">
+            
+            <!-- Question Meta & Timer Bar -->
+            <div class="w-full mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span id="q-difficulty" class="px-3.5 py-1 rounded-full text-xs sm:text-sm font-display font-extrabold uppercase tracking-wider shadow">
+                            Dễ
+                        </span>
+                        <span id="q-type-badge" class="px-3 py-1 rounded-full text-xs sm:text-sm font-bold bg-white/15 text-purple-100">
+                            Trắc nghiệm
+                        </span>
+                    </div>
+                    <!-- Circular Countdown Timer -->
+                    <div id="timer-circle" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#46178f] border-4 border-white flex items-center justify-center font-display font-black text-xl sm:text-2xl shadow-lg">
+                        20
+                    </div>
+                </div>
+
+                <!-- Smooth Timer Progress Bar -->
+                <div class="w-full h-2.5 bg-black/30 rounded-full overflow-hidden">
+                    <div id="timer-bar" class="h-full bg-yellow-400 transition-all duration-100 ease-linear" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="bg-white text-gray-900 rounded-2xl p-6 sm:p-10 shadow-2xl my-auto flex items-center justify-center min-h-[160px] sm:min-h-[210px] text-center animate-pop">
+                <h2 id="q-text" class="font-display font-extrabold text-xl sm:text-3xl leading-snug">
+                    Nội dung câu hỏi sẽ hiển thị ở đây?
+                </h2>
+            </div>
+
+            <!-- Answer Options Grid -->
+            <div id="answers-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4 mt-6 mb-2">
+                <!-- Dynamically injected answer buttons -->
+            </div>
+        </section>
+
+        <!-- ==================== 3. INSTANT FEEDBACK SCREEN ==================== -->
+        <section id="screen-feedback" class="hidden w-full max-w-2xl text-center animate-pop">
+            <div id="feedback-card" class="rounded-3xl p-7 sm:p-10 shadow-2xl border-4 border-white/20">
+                <!-- Icon -->
+                <div id="feedback-icon" class="w-20 h-20 mx-auto rounded-full bg-white flex items-center justify-center mb-4 shadow-lg">
+                    <!-- Check or Cross SVG -->
+                </div>
+
+                <h2 id="feedback-title" class="font-display font-black text-3xl sm:text-4xl uppercase tracking-wide mb-2">
+                    CHÍNH XÁC!
+                </h2>
+
+                <div id="feedback-points-box" class="inline-block bg-black/25 px-5 py-2 rounded-2xl font-display font-extrabold text-xl sm:text-2xl mb-4">
+                    +950 điểm
+                </div>
+
+                <p id="feedback-streak-text" class="text-sm sm:text-base font-bold text-white/90 mb-6">
+                    Chuỗi trả lời đúng: 3 🔥
+                </p>
+
+                <!-- Correct Answer Highlight Box -->
+                <div class="bg-white/95 text-gray-900 rounded-2xl p-4 sm:p-5 mb-7 text-left shadow-inner">
+                    <span class="block text-xs font-display font-extrabold uppercase tracking-wider text-gray-500 mb-1">
+                        Đáp án đúng:
+                    </span>
+                    <p id="feedback-correct-answer" class="font-display font-bold text-base sm:text-lg text-emerald-700">
+                        B. Polymer
+                    </p>
+                </div>
+
+                <button id="btn-next" onclick="nextQuestion()" class="w-full sm:w-auto px-10 py-4 rounded-xl btn-kahoot bg-white text-[#25076b] font-display font-black text-lg uppercase tracking-wide shadow-xl cursor-pointer">
+                    Câu tiếp theo ➔
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== 4. FINAL PODIUM / SCOREBOARD ==================== -->
+        <section id="screen-result" class="hidden w-full max-w-4xl animate-pop">
+            <!-- Podium Header -->
+            <div class="bg-white text-gray-900 rounded-3xl p-6 sm:p-10 shadow-2xl text-center mb-6 relative overflow-hidden">
+                <div class="inline-block bg-purple-100 text-[#46178f] font-display font-extrabold text-xs uppercase tracking-widest px-4 py-1.5 rounded-full mb-3">
+                    Tổng Kết Trò Chơi
+                </div>
+                <h2 id="result-player-name" class="font-display font-black text-3xl sm:text-4xl text-[#25076b] mb-2">
+                    Người chơi
+                </h2>
+                <p id="result-rank-title" class="text-gray-600 font-bold text-sm sm:text-base mb-6">
+                    Chuyên gia Vật liệu Polymer!
+                </p>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-3 gap-3 sm:gap-5 max-w-xl mx-auto mb-8">
+                    <div class="bg-purple-50 border-2 border-purple-200 rounded-2xl p-3 sm:p-4">
+                        <span class="block text-xs font-bold text-purple-600 uppercase mb-1">Tổng điểm</span>
+                        <span id="result-total-score" class="font-display font-black text-xl sm:text-3xl text-[#46178f]">0</span>
+                    </div>
+                    <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-3 sm:p-4">
+                        <span class="block text-xs font-bold text-emerald-600 uppercase mb-1">Độ chính xác</span>
+                        <span id="result-accuracy" class="font-display font-black text-xl sm:text-3xl text-emerald-700">0%</span>
+                    </div>
+                    <div class="bg-orange-50 border-2 border-orange-200 rounded-2xl p-3 sm:p-4">
+                        <span class="block text-xs font-bold text-orange-600 uppercase mb-1">Chuỗi cao nhất</span>
+                        <span id="result-max-streak" class="font-display font-black text-xl sm:text-3xl text-orange-600">0 🔥</span>
+                    </div>
+                </div>
+
+                <button onclick="restartGame()" class="px-8 py-4 rounded-xl btn-kahoot btn-dark text-white font-display font-black text-lg uppercase tracking-wide cursor-pointer">
+                    ↻ Chơi lại
+                </button>
+            </div>
+
+            <!-- Review List of all 15 Questions -->
+            <div class="bg-white/95 text-gray-900 rounded-3xl p-5 sm:p-8 shadow-2xl">
+                <h3 class="font-display font-black text-xl sm:text-2xl text-[#25076b] mb-4 flex items-center gap-2">
+                    <span>📋</span> Chi tiết 15 câu hỏi
+                </h3>
+                <div id="review-list" class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // ==================== QUIZ DATA (EXACT 15 QUESTIONS) ====================
+        const QUIZ_DATA = [
+            {
+                id: 1,
+                difficulty: "Dễ",
+                type: "mc",
+                time: 20,
+                question: "Thành phần chính của chất dẻo là gì?",
+                options: [
+                    { key: "A", text: "Chất hoá dẻo" },
+                    { key: "B", text: "Polymer" },
+                    { key: "C", text: "Chất độn" },
+                    { key: "D", text: "Chất xúc tiến" }
+                ],
+                correct: "B"
+            },
+            {
+                id: 2,
+                difficulty: "Dễ",
+                type: "mc",
+                time: 20,
+                question: "Loại chất dẻo nào trong suốt, dùng để sản xuất thuỷ tinh hữu cơ làm kính máy bay, bể cá?",
+                options: [
+                    { key: "A", text: "Polyethylene (PE)" },
+                    { key: "B", text: "Poly(vinyl chloride) (PVC)" },
+                    { key: "C", text: "Poly(methyl methacrylate)" },
+                    { key: "D", text: "Polystyrene (PS)" }
+                ],
+                correct: "C"
+            },
+            {
+                id: 3,
+                difficulty: "Dễ",
+                type: "mc",
+                time: 20,
+                question: "Bê tông cốt thép thuộc loại vật liệu composite nào?",
+                options: [
+                    { key: "A", text: "Composite nền hữu cơ" },
+                    { key: "B", text: "Composite nền kim loại" },
+                    { key: "C", text: "Composite nền vô cơ" },
+                    { key: "D", text: "Composite sợi carbon" }
+                ],
+                correct: "C"
+            },
+            {
+                id: 4,
+                difficulty: "Dễ",
+                type: "mc",
+                time: 20,
+                question: "Tơ nào sau đây thuộc loại tơ thiên nhiên?",
+                options: [
+                    { key: "A", text: "Tơ tằm" },
+                    { key: "B", text: "Tơ nilon-6,6" },
+                    { key: "C", text: "Tơ visco" },
+                    { key: "D", text: "Tơ nitron" }
+                ],
+                correct: "A"
+            },
+            {
+                id: 5,
+                difficulty: "Dễ",
+                type: "tf",
+                time: 20,
+                question: "Tơ nilon-6,6 thuộc loại tơ poliamit, được điều chế bằng phản ứng trùng ngưng giữa hexametylendiamin và axit ađipic.",
+                options: [
+                    { key: "Đúng", text: "Đúng" },
+                    { key: "Sai", text: "Sai" }
+                ],
+                correct: "Đúng"
+            },
+            {
+                id: 6,
+                difficulty: "Dễ",
+                type: "mc",
+                time: 20,
+                question: "Keo dán epoxy thường được dùng để dán loại vật liệu nào?",
+                options: [
+                    { key: "A", text: "Gỗ" },
+                    { key: "B", text: "Cao su" },
+                    { key: "C", text: "Kim loại" },
+                    { key: "D", text: "Giấy" }
+                ],
+                correct: "C"
+            },
+            {
+                id: 7,
+                difficulty: "Trung bình",
+                type: "mc",
+                time: 20,
+                question: "Giải pháp nào tối ưu cho đồ dùng nhựa dùng một lần nhờ khả năng phân huỷ nhanh dưới tác động của vi khuẩn?",
+                options: [
+                    { key: "A", text: "Đốt rác thải nhựa" },
+                    { key: "B", text: "Chôn lấp dưới đất" },
+                    { key: "C", text: "Dùng chất dẻo phân huỷ sinh học (như polylactic acid)" },
+                    { key: "D", text: "Dùng nhựa PVC thay thế" }
+                ],
+                correct: "C"
+            },
+            {
+                id: 8,
+                difficulty: "Trung bình",
+                type: "mc",
+                time: 20,
+                question: "Trong cấu trúc vật liệu composite, thành phần nào giữ vai trò chịu lực chính?",
+                options: [
+                    { key: "A", text: "Chất nền" },
+                    { key: "B", text: "Chất cốt (vật liệu gia cường)" },
+                    { key: "C", text: "Chất hoá dẻo" },
+                    { key: "D", text: "Chất kết dính" }
+                ],
+                correct: "B"
+            },
+            {
+                id: 9,
+                difficulty: "Trung bình",
+                type: "mc",
+                time: 20,
+                question: "Loại cao su tổng hợp nào có khả năng kháng dầu mỡ, dung môi cực tốt, dùng làm ống dẫn xăng dầu?",
+                options: [
+                    { key: "A", text: "Cao su Buna" },
+                    { key: "B", text: "Cao su Buna-S" },
+                    { key: "C", text: "Cao su Buna-N" },
+                    { key: "D", text: "Cao su Butyl" }
+                ],
+                correct: "C"
+            },
+            {
+                id: 10,
+                difficulty: "Trung bình",
+                type: "mc",
+                time: 20,
+                question: "Loại cao su nào chống thấm khí tốt nhất, thường dùng làm săm (ruột) xe?",
+                options: [
+                    { key: "A", text: "Cao su Butyl" },
+                    { key: "B", text: "Cao su Chloroprene" },
+                    { key: "C", text: "Cao su Silicone" },
+                    { key: "D", text: "Cao su Isoprene" }
+                ],
+                correct: "A"
+            },
+            {
+                id: 11,
+                difficulty: "Trung bình",
+                type: "tf",
+                time: 20,
+                question: "Tơ visco và tơ xenlulozơ axetat thuộc nhóm tơ tổng hợp.",
+                options: [
+                    { key: "Đúng", text: "Đúng" },
+                    { key: "Sai", text: "Sai" }
+                ],
+                correct: "Sai"
+            },
+            {
+                id: 12,
+                difficulty: "Trung bình",
+                type: "mc",
+                time: 20,
+                question: "Khi sử dụng nhựa vá săm, thao tác nào sau đây là đúng?",
+                options: [
+                    { key: "A", text: "Bôi nhựa và dán chặt ngay lập tức" },
+                    { key: "B", text: "Làm sạch, bôi nhựa, đợi dung môi bay hơi rồi mới dán chặt" },
+                    { key: "C", text: "Đun nóng chảy nhựa trước khi bôi" },
+                    { key: "D", text: "Pha thêm nước vào nhựa trước khi dán" }
+                ],
+                correct: "B"
+            },
+            {
+                id: 13,
+                difficulty: "Khó",
+                type: "mc",
+                time: 30,
+                question: "Điều gì xảy ra nếu lưu hoá cao su với hàm lượng lưu huỳnh quá cao (khoảng 30% - 50%)?",
+                options: [
+                    { key: "A", text: "Cao su có độ đàn hồi cực đại" },
+                    { key: "B", text: "Cao su chuyển thành nhựa cứng, giòn, mất tính đàn hồi (ebonite)" },
+                    { key: "C", text: "Cao su dễ tan hơn trong xăng và benzen" },
+                    { key: "D", text: "Cao su bị chảy dính ở nhiệt độ thường" }
+                ],
+                correct: "B"
+            },
+            {
+                id: 14,
+                difficulty: "Khó",
+                type: "mc",
+                time: 30,
+                question: "Vì sao cao su thiên nhiên (cis-polyisoprene) có tính đàn hồi trong khi đồng phân dạng trans (nhựa Gutta-percha) lại cứng và giòn?",
+                options: [
+                    { key: "A", text: "Do cấu hình cis gây cản trở không gian, ngăn các mạch xếp khít vào nhau" },
+                    { key: "B", text: "Do dạng trans có mạch phân nhánh dày đặc" },
+                    { key: "C", text: "Do cấu hình cis chứa nhiều cầu nối disulfide (-S-S-)" },
+                    { key: "D", text: "Do dạng trans không có liên kết đôi C=C trong mạch" }
+                ],
+                correct: "A"
+            },
+            {
+                id: 15,
+                difficulty: "Khó",
+                type: "tf",
+                time: 30,
+                question: "Trong vật liệu composite, chất nền và chất cốt hoà tan hoàn toàn vào nhau tạo thành một dung dịch rắn đồng nhất.",
+                options: [
+                    { key: "Đúng", text: "Đúng" },
+                    { key: "Sai", text: "Sai" }
+                ],
+                correct: "Sai"
+            }
+        ];
+
+        // ==================== GAME STATE ====================
+        let currentIndex = 0;
+        let score = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let correctCount = 0;
+        let playerName = "Người chơi";
+        let timerInterval = null;
+        let timeLeft = 20;
+        let totalTimeForQuestion = 20;
+        let questionStartTime = 0;
+        let answeredCurrent = false;
+        let userHistory = [];
+        let soundEnabled = true;
+
+        // ==================== WEB AUDIO API SYNTHESIZER ====================
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, type, duration, delay = 0, gainVal = 0.15) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+
+                gain.gain.setValueAtTime(gainVal, audioCtx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + delay);
+                osc.stop(audioCtx.currentTime + delay + duration);
+            } catch (e) {
+                // Ignore audio block errors
+            }
+        }
+
+        function sfxTick(urgent = false) {
+            playTone(urgent ? 880 : 520, 'sine', 0.08, 0, urgent ? 0.12 : 0.05);
+        }
+
+        function sfxCorrect() {
+            playTone(523.25, 'triangle', 0.15, 0, 0.2);    // C5
+            playTone(659.25, 'triangle', 0.15, 0.1, 0.2);  // E5
+            playTone(783.99, 'triangle', 0.25, 0.2, 0.22); // G5
+            playTone(1046.50, 'triangle', 0.4, 0.32, 0.25); // C6
+        }
+
+        function sfxWrong() {
+            playTone(300, 'sawtooth', 0.25, 0, 0.15);
+            playTone(220, 'sawtooth', 0.4, 0.2, 0.15);
+        }
+
+        function sfxFanfare() {
+            const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+            const times = [0, 0.12, 0.24, 0.36, 0.55, 0.7];
+            notes.forEach((n, idx) => {
+                playTone(n, 'triangle', 0.3, times[idx], 0.2);
+            });
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('icon-sound-on').classList.toggle('hidden', !soundEnabled);
+            document.getElementById('icon-sound-off').classList.toggle('hidden', soundEnabled);
+            if (soundEnabled) playTone(660, 'sine', 0.1, 0, 0.1);
+        }
+
+        // ==================== SCREEN MANAGEMENT ====================
+        function showScreen(screenId) {
+            ['screen-start', 'screen-question', 'screen-feedback', 'screen-result'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+
+            const hud = document.getElementById('hud-stats');
+            if (screenId === 'screen-start') {
+                hud.classList.add('hidden');
+            } else {
+                hud.classList.remove('hidden');
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-progress').textContent = `${Math.min(currentIndex + 1, QUIZ_DATA.length)}/${QUIZ_DATA.length}`;
+            document.getElementById('hud-score').textContent = score.toLocaleString('vi-VN');
+            const streakBadge = document.getElementById('hud-streak-badge');
+            if (streak >= 2) {
+                streakBadge.classList.remove('hidden');
+                document.getElementById('hud-streak').textContent = streak;
+            } else {
+                streakBadge.classList.add('hidden');
+            }
+        }
+
+        // ==================== GAME FLOW ====================
+        function startGame() {
+            initAudio();
+            const inputVal = document.getElementById('player-name').value.trim();
+            playerName = inputVal || "Học sinh Hóa 12";
+
+            currentIndex = 0;
+            score = 0;
+            streak = 0;
+            maxStreak = 0;
+            correctCount = 0;
+            userHistory = [];
+
+            playTone(600, 'triangle', 0.15, 0, 0.15);
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            answeredCurrent = false;
+            const q = QUIZ_DATA[currentIndex];
+            totalTimeForQuestion = q.time;
+            timeLeft = q.time;
+
+            showScreen('screen-question');
+            updateHUD();
+
+            // Difficulty Badge Styling
+            const diffEl = document.getElementById('q-difficulty');
+            diffEl.textContent = q.difficulty;
+            diffEl.className = "px-3.5 py-1 rounded-full text-xs sm:text-sm font-display font-extrabold uppercase tracking-wider shadow ";
+            if (q.difficulty === "Dễ") {
+                diffEl.classList.add("bg-emerald-400", "text-emerald-950");
+            } else if (q.difficulty === "Trung bình") {
+                diffEl.classList.add("bg-amber-400", "text-amber-950");
+            } else {
+                diffEl.classList.add("bg-rose-500", "text-white");
+            }
+
+            // Question Type Badge
+            document.getElementById('q-type-badge').textContent = q.type === "tf" ? "Đúng / Sai" : "Trắc nghiệm";
+
+            // Question Text
+            document.getElementById('q-text').textContent = q.question;
+
+            // Render Kahoot Iconic Shapes & Buttons
+            const grid = document.getElementById('answers-grid');
+            grid.innerHTML = "";
+
+            if (q.type === "mc") {
+                const styles = [
+                    { btn: "btn-red", shape: `<polygon points="50,15 88,85 12,85" fill="white"/>` },
+                    { btn: "btn-blue", shape: `<rect x="22" y="22" width="56" height="56" fill="white" transform="rotate(45 50 50)"/>` },
+                    { btn: "btn-yellow", shape: `<circle cx="50" cy="50" r="36" fill="white"/>` },
+                    { btn: "btn-green", shape: `<rect x="18" y="18" width="64" height="64" rx="6" fill="white"/>` }
+                ];
+
+                q.options.forEach((opt, idx) => {
+                    const st = styles[idx];
+                    const btn = document.createElement('button');
+                    btn.className = `btn-kahoot ${st.btn} rounded-2xl p-4 sm:p-5 flex items-center gap-4 text-left text-white cursor-pointer min-h-[76px] sm:min-h-[92px]`;
+                    btn.onclick = () => submitAnswer(opt.key);
+                    btn.innerHTML = `
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center bg-black/15 rounded-xl">
+                            <svg class="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 100 100">${st.shape}</svg>
+                        </div>
+                        <div class="flex-1 font-display font-bold text-base sm:text-lg leading-snug">
+                            <span class="opacity-80 mr-1">${opt.key}.</span> ${opt.text}
+                        </div>
+                    `;
+                    grid.appendChild(btn);
+                });
+            } else {
+                // True/False: Blue Diamond ("Đúng") and Red Triangle ("Sai")
+                const tfConfigs = [
+                    {
+                        key: "Đúng",
+                        label: "Đúng",
+                        btn: "btn-blue",
+                        shape: `<rect x="22" y="22" width="56" height="56" fill="white" transform="rotate(45 50 50)"/>`
+                    },
+                    {
+                        key: "Sai",
+                        label: "Sai",
+                        btn: "btn-red",
+                        shape: `<polygon points="50,15 88,85 12,85" fill="white"/>`
+                    }
+                ];
+
+                tfConfigs.forEach(cfg => {
+                    const btn = document.createElement('button');
+                    btn.className = `btn-kahoot ${cfg.btn} rounded-2xl p-6 sm:p-8 flex items-center justify-center gap-4 text-white cursor-pointer min-h-[100px] sm:min-h-[130px]`;
+                    btn.onclick = () => submitAnswer(cfg.key);
+                    btn.innerHTML = `
+                        <div class="w-12 h-12 shrink-0 flex items-center justify-center bg-black/15 rounded-xl">
+                            <svg class="w-8 h-8" viewBox="0 0 100 100">${cfg.shape}</svg>
+                        </div>
+                        <span class="font-display font-black text-2xl sm:text-3xl tracking-wide">${cfg.label}</span>
+                    `;
+                    grid.appendChild(btn);
+                });
+            }
+
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            const timerCircle = document.getElementById('timer-circle');
+            const timerBar = document.getElementById('timer-bar');
+
+            timerCircle.textContent = totalTimeForQuestion;
+            timerCircle.classList.remove('timer-urgent');
+            timerBar.style.width = '100%';
+            timerBar.className = "h-full bg-yellow-400 transition-all duration-100 ease-linear";
+
+            questionStartTime = performance.now();
+            let lastWholeSecond = totalTimeForQuestion;
+
+            timerInterval = setInterval(() => {
+                const elapsed = (performance.now() - questionStartTime) / 1000;
+                const remaining = Math.max(0, totalTimeForQuestion - elapsed);
+                const wholeSec = Math.ceil(remaining);
+
+                timerCircle.textContent = wholeSec;
+                const pct = (remaining / totalTimeForQuestion) * 100;
+                timerBar.style.width = `${pct}%`;
+
+                if (wholeSec <= 5 && wholeSec > 0) {
+                    timerCircle.classList.add('timer-urgent');
+                    timerBar.classList.remove('bg-yellow-400');
+                    timerBar.classList.add('bg-rose-500');
+                }
+
+                if (wholeSec < lastWholeSecond && wholeSec > 0) {
+                    lastWholeSecond = wholeSec;
+                    sfxTick(wholeSec <= 5);
+                }
+
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    submitAnswer(null); // Time's up!
+                }
+            }, 80);
+        }
+
+        function submitAnswer(selectedKey) {
+            if (answeredCurrent) return;
+            answeredCurrent = true;
+            clearInterval(timerInterval);
+
+            const q = QUIZ_DATA[currentIndex];
+            const elapsed = (performance.now() - questionStartTime) / 1000;
+            const remaining = Math.max(0, totalTimeForQuestion - elapsed);
+
+            const isCorrect = selectedKey === q.correct;
+            let pointsEarned = 0;
+
+            if (isCorrect) {
+                correctCount++;
+                streak++;
+                if (streak > maxStreak) maxStreak = streak;
+
+                // Kahoot-style speed score (500 to 1000 base points) + Streak bonus
+                const timeRatio = remaining / totalTimeForQuestion;
+                const basePoints = Math.round(500 + 500 * timeRatio);
+                const streakBonus = streak >= 2 ? Math.min((streak - 1) * 100, 500) : 0;
+                pointsEarned = basePoints + streakBonus;
+                score += pointsEarned;
+
+                sfxCorrect();
+            } else {
+                streak = 0;
+                sfxWrong();
+            }
+
+            // Record history for final review
+            const correctOptionObj = q.options.find(o => o.key === q.correct);
+            const selectedOptionObj = q.options.find(o => o.key === selectedKey);
+
+            const formattedCorrect = q.type === "mc"
+                ? `${correctOptionObj.key}. ${correctOptionObj.text}`
+                : correctOptionObj.text;
+
+            const formattedSelected = !selectedKey
+                ? "Hết giờ (Chưa chọn)"
+                : (q.type === "mc" ? `${selectedOptionObj.key}. ${selectedOptionObj.text}` : selectedOptionObj.text);
+
+            userHistory.push({
+                number: q.id,
+                question: q.question,
+                isCorrect: isCorrect,
+                userAnswer: formattedSelected,
+                correctAnswer: formattedCorrect
+            });
+
+            updateHUD();
+            showFeedbackScreen(isCorrect, selectedKey === null, pointsEarned, formattedCorrect);
+        }
+
+        function showFeedbackScreen(isCorrect, isTimeout, pointsEarned, formattedCorrect) {
+            showScreen('screen-feedback');
+
+            const card = document.getElementById('feedback-card');
+            const iconBox = document.getElementById('feedback-icon');
+            const title = document.getElementById('feedback-title');
+            const pointsBox = document.getElementById('feedback-points-box');
+            const streakText = document.getElementById('feedback-streak-text');
+            const correctAnsEl = document.getElementById('feedback-correct-answer');
+            const nextBtn = document.getElementById('btn-next');
+
+            if (isCorrect) {
+                card.className = "rounded-3xl p-7 sm:p-10 shadow-2xl border-4 border-white/30 bg-[#26890c]";
+                iconBox.innerHTML = `<svg class="w-12 h-12 text-[#26890c]" fill="none" stroke="currentColor" stroke-width="3.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+                title.textContent = "CHÍNH XÁC!";
+                pointsBox.textContent = `+${pointsEarned.toLocaleString('vi-VN')} điểm`;
+                streakText.textContent = streak >= 2
+                    ? `Chuỗi trả lời đúng: ${streak} 🔥 (Đã cộng thưởng chuỗi!)`
+                    : `Chuỗi trả lời đúng: 1`;
+            } else {
+                card.className = "rounded-3xl p-7 sm:p-10 shadow-2xl border-4 border-white/30 bg-[#e21b3c]";
+                iconBox.innerHTML = `<svg class="w-12 h-12 text-[#e21b3c]" fill="none" stroke="currentColor" stroke-width="3.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>`;
+                title.textContent = isTimeout ? "HẾT GIỜ!" : "CHƯA CHÍNH XÁC!";
+                pointsBox.textContent = "+0 điểm";
+                streakText.textContent = "Chuỗi trả lời đúng đã đặt lại về 0";
+            }
+
+            correctAnsEl.textContent = formattedCorrect;
+            nextBtn.textContent = currentIndex === QUIZ_DATA.length - 1 ? "Xem bảng xếp hạng 🏆" : "Câu tiếp theo ➔";
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < QUIZ_DATA.length) {
+                loadQuestion();
+            } else {
+                showFinalResults();
+            }
+        }
+
+        function showFinalResults() {
+            showScreen('screen-result');
+            sfxFanfare();
+            launchConfetti();
+
+            const accuracy = Math.round((correctCount / QUIZ_DATA.length) * 100);
+            document.getElementById('result-player-name').textContent = playerName;
+            document.getElementById('result-total-score').textContent = score.toLocaleString('vi-VN');
+            document.getElementById('result-accuracy').textContent = `${accuracy}% (${correctCount}/15)`;
+            document.getElementById('result-max-streak').textContent = `${maxStreak} 🔥`;
+
+            let rankTitle = "";
+            if (accuracy >= 90) rankTitle = "🏆 Bậc Thầy Vật Liệu Polymer! Xuất sắc!";
+            else if (accuracy >= 70) rankTitle = "🥈 Nhà Hóa Học Tài Năng! Rất ấn tượng!";
+            else if (accuracy >= 50) rankTitle = "🥉 Hoàn Thành Tốt! Cố gắng thêm chút nữa nhé!";
+            else rankTitle = "📚 Cần ôn tập thêm kiến thức về Polymer nhé!";
+            document.getElementById('result-rank-title').textContent = rankTitle;
+
+            // Render Review List
+            const list = document.getElementById('review-list');
+            list.innerHTML = "";
+
+            userHistory.forEach(item => {
+                const row = document.createElement('div');
+                row.className = `p-4 rounded-2xl border-2 ${item.isCorrect ? 'bg-emerald-50/70 border-emerald-200' : 'bg-rose-50/70 border-rose-200'}`;
+                row.innerHTML = `
+                    <div class="flex items-start justify-between gap-3 mb-1.5">
+                        <span class="font-display font-bold text-sm sm:text-base text-gray-900">
+                            Câu ${item.number}: ${item.question}
+                        </span>
+                        <span class="shrink-0 px-2.5 py-0.5 rounded-full text-xs font-extrabold ${item.isCorrect ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}">
+                            ${item.isCorrect ? 'Đúng' : 'Sai'}
+                        </span>
+                    </div>
+                    <div class="text-xs sm:text-sm space-y-1">
+                        <p class="${item.isCorrect ? 'text-emerald-700 font-semibold' : 'text-rose-700 font-semibold'}">
+                            Bạn chọn: ${item.userAnswer}
+                        </p>
+                        ${!item.isCorrect ? `<p class="text-emerald-700 font-bold">Đáp án đúng: ${item.correctAnswer}</p>` : ''}
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function restartGame() {
+            showScreen('screen-start');
+        }
+
+        function launchConfetti() {
+            const colors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#ffffff', '#ff69b4'];
+            for (let i = 0; i < 65; i++) {
+                const conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                conf.style.animationDelay = (Math.random() * 0.8) + 's';
+                conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                document.body.appendChild(conf);
+                setTimeout(() => conf.remove(), 4500);
+            }
+        }
+    </script>
+</body>
+</html>
